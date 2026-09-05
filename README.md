@@ -64,7 +64,8 @@ Tree‑based nonlinear models assume:
     - Independent observations
     - Representative training data
     - Consistent measurement scales
-      They do not require linearity, homoscedasticity, or normality, making them robust for biological       datasets like abalone measurements.
+      They do not require linearity, homoscedasticity, or normality, 
+      making them robust for biological datasets like abalone measurements.
 
 **Kaggle Submission Evidence**
 
