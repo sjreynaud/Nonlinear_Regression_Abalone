@@ -31,12 +31,43 @@ sample_submission = pd.read_csv("sample_submission.csv")
 train.head()
 
 
-# Step 3 — Basic EDA + Missing Data Check
-
 # In[3]:
 
 
-# Step 3: Quick EDA
+# 3. EDA + Figures Distribution Plots / Warning
+
+import warnings
+
+warnings.filterwarnings("ignore", category=FutureWarning)
+
+import os
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# 3. EDA + Figures Distribution Plots
+numeric_cols = ["Age", "Height", "Weight", "FCVC", "NCP", "CH2O", "FAF", "TUE"]
+
+# Automatically creates the "figures" folder if it doesn't exist yet
+os.makedirs("NU/DDS8555/Build_Non-Linear_Models_Part 2/figures", exist_ok=True)
+
+
+plt.figure(figsize=(12, 10))
+for i, col in enumerate(numeric_cols):
+    plt.subplot(3, 3, i + 1)
+    sns.histplot(train[col], kde=True)
+    plt.title(f"Distribution of {col}")
+
+plt.tight_layout()
+plt.savefig("NU/DDS8555/Build_Non-Linear_Models_Part 2/figures/model1_eda_distributions.png")
+plt.show()
+
+
+# Step 4 — Basic EDA + Missing Data Check
+
+# In[4]:
+
+
+# Step 4: Quick EDA
 print(train.info())
 print(train.describe())
 
@@ -47,12 +78,45 @@ print("Missing values in test:")
 print(test.isna().sum())
 
 
-# Step 4 — Encode Categorical Variables
+# Step 5 — Encode Categorical Variables
 
-# In[4]:
+# In[5]:
 
 
-# Step 4: Encode categorical features BEFORE splitting
+#5 fit the encoder on the combined unique values of both the train and test sets. 
+# This ensures the encoder learns every possible category beforehand
+
+import pandas as pd
+from sklearn.preprocessing import LabelEncoder
+
+# Step 5: Encode categorical features BEFORE splitting
+cat_cols = train.select_dtypes(include=["object"]).columns
+
+label_encoders = {}
+for col in cat_cols:
+    le = LabelEncoder()
+    
+    if col in test.columns:
+        # FIX: Combine unique values from both train and test so 'Always' is recognized
+        combined_categories = pd.concat([train[col], test[col]]).dropna().unique()
+        le.fit(combined_categories)
+        
+        # Transform both datasets safely
+        train[col] = le.transform(train[col])
+        test[col] = le.transform(test[col])
+    else:
+        # For columns ONLY in train (like your target variable 'NObeyesdad')
+        train[col] = le.fit_transform(train[col])
+        
+    label_encoders[col] = le
+
+
+# Step 6 — Create Features, Target, and Validation Split
+
+# In[6]:
+
+
+# Step 6: Encode categorical features BEFORE splitting
 cat_cols = train.select_dtypes(include=["object"]).columns
 
 label_encoders = {}
@@ -63,13 +127,15 @@ for col in cat_cols:
     label_encoders[col] = le
 
 
-# Step 5 — Create Features, Target, and Validation Split
+# Step 7 — Fit Non‑Linear Model 1 (Random Forest)
 
-# In[5]:
+# In[7]:
 
 
-# Step 5: Define features and target
-target_col = "Rings"
+# Step 7: Define features and target
+
+target_col = "NObeyesdad"
+
 X = train.drop(columns=[target_col])
 y = train[target_col]
 
@@ -81,12 +147,10 @@ X_train, X_valid, y_train, y_valid = train_test_split(
 )
 
 
-# Step 6 — Fit Non‑Linear Model 1 (Random Forest)
-
-# In[6]:
+# In[8]:
 
 
-# Step 6: Random Forest model
+# Step 8: Random Forest model
 rf_model = RandomForestRegressor(
     n_estimators=400,
     max_depth=None,
@@ -104,12 +168,12 @@ print("Model 1 - Random Forest RMSLE (validation):", rmsle_rf)
 
 
 
-# Step 7 — Retrain Random Forest on Full Training Data
+# Step 9 — Retrain Random Forest on Full Training Data
 
-# In[7]:
+# In[9]:
 
 
-# Step 7: Retrain on full training data
+# Step 9: Retrain on full training data
 rf_model_full = RandomForestRegressor(
     n_estimators=400,
     max_depth=None,
@@ -124,17 +188,17 @@ rf_model_full.fit(X, y)
 test_pred_rf = rf_model_full.predict(X_test)
 
 
-# Step 8 — Build First Submission File
+# Step 10 — Build First Submission File
 
-# In[8]:
+# In[10]:
 
 
-# Step 8: Create first submission DataFrame
+# Step 10: Create first submission DataFrame
 submission_rf = sample_submission.copy()
 submission_rf["Rings"] = test_pred_rf
 
 # Save CSV for Kaggle
-submission_rf.to_csv("submission_model1_random_forest.csv", index=False)
+submission_rf.to_csv("NU/DDS8555/Build_Non-Linear_Models_Part 2/submission/submission_model1_random_forest.csv", index=False)
 
 submission_rf.head()
 
